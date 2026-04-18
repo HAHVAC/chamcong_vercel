@@ -1,0 +1,98 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
+          // Fallback: hardcode admin email (case insensitive bằng cách check cả 2 dạng)
+          request.auth.token.email.lower() == 'hahvac@gmail.com'
+        );
+    }
+
+    function isManager() {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'manager';
+    }
+
+    // Kiểm tra manager có phải quản lý của nhân viên sở hữu bản ghi hay không
+    function isManagerOf(ownerUserId) {
+      return isManager() &&
+        exists(/databases/$(database)/documents/users/$(ownerUserId)) &&
+        get(/databases/$(database)/documents/users/$(ownerUserId)).data.get('managerEmail', '').lower() == request.auth.token.email.lower();
+    }
+
+    match /attendance/{recordId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.userId ||
+        isAdmin() ||
+        (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('siteRoles', {}).get(resource.data.siteId, 'none') == 'view_only'
+        ) ||
+        // Manager xem được lịch sử chấm công của nhân viên mình quản lý
+        isManagerOf(resource.data.userId)
+      );
+
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+
+      allow update, delete: if false;
+    }
+    
+    match /sites/{siteId} {
+      // Anyone authenticated can read sites to check-in
+      allow read: if isAuthenticated();
+      // Only admins can create, update, delete sites
+      allow write: if isAdmin();
+    }
+    
+    match /users/{userId} {
+      // Anyone authenticated can read users (needed for AdminPanel and checking roles)
+      allow read: if isAuthenticated();
+      allow create: if (isAuthenticated() && isOwner(userId) && request.resource.data.role != 'admin') || isAdmin();
+      allow update: if isAdmin() || (
+        isOwner(userId) &&
+        request.resource.data.role == resource.data.role &&
+        request.resource.data.get('assignedSiteIds', []) == resource.data.get('assignedSiteIds', []) &&
+        request.resource.data.get('siteRoles', {}) == resource.data.get('siteRoles', {})
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /requests/{requestId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.userId ||
+        isAdmin() ||
+        // Ưu tiên: so sánh UID (request mới)
+        (resource.data.get('managerId', '') != '' && resource.data.get('managerId', '') == request.auth.uid) ||
+        // Fallback email (so sánh không phân biệt hoa/thường)
+        resource.data.get('managerEmail', '').lower() == request.auth.token.email.lower() ||
+        // Fallback: tra qua user document
+        isManagerOf(resource.data.userId)
+      );
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+      allow update: if isAuthenticated() && (
+        (request.auth.uid == resource.data.userId && request.resource.data.status == resource.data.status) ||
+        isAdmin() ||
+        // Ưu tiên: so sánh UID (request mới)
+        (resource.data.get('managerId', '') != '' && resource.data.get('managerId', '') == request.auth.uid) ||
+        // Fallback email (so sánh không phân biệt hoa/thường)
+        resource.data.get('managerEmail', '').lower() == request.auth.token.email.lower() ||
+        // Fallback: tra qua user document
+        isManagerOf(resource.data.userId)
+      );
+      allow delete: if isAuthenticated() && request.auth.uid == resource.data.userId && resource.data.status == 'pending';
+    }
+  }
+}

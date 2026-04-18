@@ -1,0 +1,28 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+# Firebase service account key — chứa private key, không được commit
+service-account.json
+
+# Firebase Functions (đã thay bằng Vercel API routes)
+functions/node_modules/
+
+# Claude Code internal files
+.agents/
+.claude/
+.firebase/
+skills/
+skills-lock.json
+metadata.json
+
+# Temporary sync files
+.tmp_lark_approval_sync/
+
+# Data files có thông tin cá nhân
+*.csv

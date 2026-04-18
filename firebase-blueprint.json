@@ -1,0 +1,69 @@
+{
+  "entities": {
+    "AttendanceRecord": {
+      "title": "Attendance Record",
+      "description": "A record of a user checking in or out of a construction site.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The UID of the user." },
+        "userName": { "type": "string", "description": "The display name of the user." },
+        "timestamp": { "type": "number", "description": "The server-side timestamp of the record." },
+        "type": { "type": "string", "enum": ["check-in", "check-out"], "description": "The type of attendance action." },
+        "location": {
+          "type": "object",
+          "properties": {
+            "latitude": { "type": "number" },
+            "longitude": { "type": "number" },
+            "accuracy": { "type": "number" }
+          }
+        },
+        "photoUrl": { "type": "string", "description": "The URL of the selfie photo." },
+        "siteId": { "type": "string", "description": "The ID of the construction site." },
+        "siteName": { "type": "string", "description": "The name of the construction site." },
+        "isSynced": { "type": "boolean", "description": "Whether the record has been synced to the server." }
+      },
+      "required": ["userId", "timestamp", "type", "location", "siteId"]
+    },
+    "Site": {
+      "title": "Construction Site",
+      "description": "A construction site where users can check in.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "The name of the site." },
+        "latitude": { "type": "number", "description": "The latitude of the site." },
+        "longitude": { "type": "number", "description": "The longitude of the site." },
+        "radius": { "type": "number", "description": "The radius of the site in meters." },
+        "checkInTime": { "type": "string", "description": "The default check-in time (e.g., '07:30')." },
+        "checkOutTime": { "type": "string", "description": "The default check-out time (e.g., '17:30')." }
+      },
+      "required": ["name", "latitude", "longitude", "radius"]
+    },
+    "User": {
+      "title": "User Profile",
+      "description": "A user profile.",
+      "type": "object",
+      "properties": {
+        "role": { "type": "string", "enum": ["admin", "user"], "description": "The role of the user." },
+        "assignedSiteIds": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of site IDs the user is assigned to."
+        }
+      }
+    }
+  },
+  "firestore": {
+    "/attendance/{recordId}": {
+      "schema": "AttendanceRecord",
+      "description": "Collection of attendance records."
+    },
+    "/sites/{siteId}": {
+      "schema": "Site",
+      "description": "Collection of construction sites."
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Collection of user profiles."
+    }
+  }
+}

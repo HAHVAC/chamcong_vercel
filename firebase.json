@@ -1,0 +1,16 @@
+{
+  "firestore": [
+    {
+      "database": "(default)",
+      "rules": "firestore.rules"
+    },
+    {
+      "database": "chamcong-db",
+      "rules": "firestore.rules"
+    },
+    {
+      "database": "ai-studio-06f89ebb-f68a-4c5e-8e3a-e05f19a39370",
+      "rules": "firestore.rules"
+    }
+  ]
+}

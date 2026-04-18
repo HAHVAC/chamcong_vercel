@@ -1,0 +1,14 @@
+{
+  "name": "chamcong-api-functions",
+  "main": "index.js",
+  "engines": {
+    "node": "20"
+  },
+  "dependencies": {
+    "axios": "^1.14.0",
+    "cors": "^2.8.6",
+    "express": "^4.21.2",
+    "firebase-functions": "^6.0.0",
+    "form-data": "^4.0.5"
+  }
+}
